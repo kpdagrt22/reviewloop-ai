@@ -1,6 +1,8 @@
 import { requireOrg, getUser } from "@/lib/auth/session";
 import { loadAdminDiagnostics } from "@/lib/data/admin";
 import { adminEmails, isAdminEmail } from "@/lib/env";
+import { createClient } from "@/lib/supabase/server";
+import { reportDbError } from "@/lib/observability/log";
 import { Badge } from "@/components/ui/badge";
 import { StatCard } from "@/components/ui/card";
 
@@ -35,6 +37,16 @@ export default async function AdminPage() {
       </div>
     );
   }
+
+  // Audit trail: record that an admin viewed internal diagnostics. Best-effort —
+  // a logging failure must never block the page. Visible in "Recent events" below.
+  const supabase = await createClient();
+  const { error: auditErr } = await supabase.from("notification_events").insert({
+    organization_id: org.id,
+    event_type: "admin_diagnostics_viewed",
+    metadata: { email: user?.email ?? null },
+  });
+  reportDbError("notification_events.insert(admin_view)", auditErr, { orgId: org.id });
 
   const diag = await loadAdminDiagnostics(org.id);
 

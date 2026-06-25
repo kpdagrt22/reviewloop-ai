@@ -34,7 +34,7 @@ There is **no** public customer-facing review redirect route (`/r/...`) in v1 â€
 | AI provider | `AI_PROVIDER` defaults to `mock` (no key needed) | |
 | Billing env (if testing billing) | `SUPABASE_SERVICE_ROLE_KEY` + `STRIPE_*` set | |
 | `verify:env` | `npm run verify:env` exits 0; prints no secret values | |
-| Migrations applied in order | `0001_init.sql` -> `0002_rls.sql` -> `0003_alpha_columns.sql` | |
+| Migrations applied in order | `0001_init.sql` -> `0002_rls.sql` -> `0003_alpha_columns.sql` -> `0004_request_ready_status.sql` -> `0005_indexes.sql` | |
 | Build sanity | `next build` green (21 routes); `typecheck` + `lint` clean | |
 | Verified baseline | 85 unit tests pass; 4 Playwright smoke tests pass | |
 

@@ -6,7 +6,8 @@ required; AI/email/SMS/billing are optional and degrade gracefully.
 ## 1. Supabase project
 1. Create a Supabase project.
 2. Apply migrations (in order): `0001_init.sql` → `0002_rls.sql` →
-   `0003_alpha_columns.sql` (all in `supabase/migrations/`).
+   `0003_alpha_columns.sql` → `0004_request_ready_status.sql` →
+   `0005_indexes.sql` (all in `supabase/migrations/`).
    - CLI: `supabase link --project-ref <ref>` then `supabase db push`.
    - Or paste each file into the SQL editor and run.
 3. Auth → Providers: enable Email. For the smoothest flow, decide whether to

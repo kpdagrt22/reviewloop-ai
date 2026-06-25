@@ -7,6 +7,8 @@ import { safeNextPath } from "@/lib/utils/safe-redirect";
 
 export interface AuthState {
   error?: string;
+  /** A non-error notice (e.g. "check your email to confirm"). Shown in green. */
+  notice?: string;
 }
 
 /** Email/password sign up. Creates the auth user; profile row is created by trigger. */
@@ -36,7 +38,9 @@ export async function signUpAction(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) {
-    return { error: "Check your email to confirm your account, then log in." };
+    // Not an error — email confirmation is required. Show it as a notice so the
+    // user isn't told (in red) that something failed when the account was created.
+    return { notice: "Account created. Check your email to confirm it, then log in." };
   }
   redirect("/onboarding");
 }

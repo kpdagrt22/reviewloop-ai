@@ -78,7 +78,8 @@ npm run dev
 
 Apply migrations in order **before** seeding:
 `supabase/migrations/0001_init.sql` → `0002_rls.sql` → `0003_alpha_columns.sql`
-(0003 is additive / non-destructive).
+→ `0004_request_ready_status.sql` → `0005_indexes.sql`
+(0003/0004/0005 are additive / non-destructive).
 
 The seed creates an org with 8 customers, 5 reviews (ratings 5, 5, 4, 3, 2), a
 reply draft per review, a negative-review alert, an approved testimonial, and a

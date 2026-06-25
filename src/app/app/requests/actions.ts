@@ -11,6 +11,8 @@ import { assertTransition, type RequestStatus } from "@/lib/reviews/request-stat
 import { checkReviewRequestQuota } from "@/lib/billing/usage";
 import { DELIVERY_CHANNELS, isOneOf, type DeliveryChannel } from "@/lib/db/enums";
 import { reportDbError } from "@/lib/observability/log";
+import { createOptOutToken } from "@/lib/compliance/optout-token";
+import { publicEnv } from "@/lib/env";
 
 export interface RequestActionState {
   error?: string;
@@ -128,10 +130,20 @@ export async function createRequestAction(
 
   let deliveryNote = "Message ready to copy and send manually.";
   if (channel === "email") {
+    // Email gets a one-click unsubscribe link (CAN-SPAM / compliance). The token
+    // authorizes only this customer; falls back to the STOP line if unsigned.
+    const token = createOptOutToken(customer.id);
+    const optOutUrl = token ? `${publicEnv.appUrl}/optout/${token}` : undefined;
+    const emailMessage = renderDefaultRequest({
+      customerName: customer.name,
+      businessName: org.name,
+      reviewLink: link,
+      optOutUrl,
+    });
     const res = await sendEmail({
       to: customer.email!,
-      subject,
-      body,
+      subject: emailMessage.subject,
+      body: emailMessage.body,
       replyTo: org.escalation_email ?? undefined,
     });
     if (!res.ok) return { error: res.error ?? "Email failed to send." };

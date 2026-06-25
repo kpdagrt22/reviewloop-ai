@@ -9,6 +9,8 @@ export interface TemplateContext {
   customerName: string;
   businessName: string;
   reviewLink: string;
+  /** When provided (email), a one-click unsubscribe URL is appended to the body. */
+  optOutUrl?: string;
 }
 
 export const DEFAULT_REQUEST_SUBJECT = "How was your experience with {{business}}?";
@@ -34,8 +36,12 @@ export function renderDefaultRequest(ctx: TemplateContext): {
   subject: string;
   body: string;
 } {
+  let body = renderTemplate(DEFAULT_REQUEST_BODY, ctx);
+  if (ctx.optOutUrl) {
+    body += ` To unsubscribe from these emails, visit: ${ctx.optOutUrl}`;
+  }
   return {
     subject: renderTemplate(DEFAULT_REQUEST_SUBJECT, ctx),
-    body: renderTemplate(DEFAULT_REQUEST_BODY, ctx),
+    body,
   };
 }

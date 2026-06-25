@@ -65,6 +65,20 @@ export function hasStripe(): boolean {
   return Boolean(process.env.STRIPE_SECRET_KEY);
 }
 
+/**
+ * Signing key for public opt-out tokens. Prefers a dedicated OPTOUT_SECRET, and
+ * falls back to the service-role key (server-only, high entropy, never exposed
+ * to the browser). Empty when neither is set — the opt-out link is then disabled
+ * until one is configured.
+ */
+export function optOutSecret(): string {
+  return process.env.OPTOUT_SECRET ?? process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
+}
+
+export function hasOptOut(): boolean {
+  return Boolean(optOutSecret() && hasSupabaseServiceRole());
+}
+
 export function aiConfigured(): { provider: string; live: boolean } {
   const provider = aiProvider();
   if (provider === "openai") return { provider, live: Boolean(process.env.OPENAI_API_KEY) };
@@ -130,5 +144,6 @@ export function getEnvStatus(): EnvVarStatus[] {
     { name: "NEXT_PUBLIC_STRIPE_PRICE_AGENCY", group: "Billing", required: "optional", present: p("NEXT_PUBLIC_STRIPE_PRICE_AGENCY") },
     { name: "NEXT_PUBLIC_APP_URL", group: "App", required: "optional", present: p("NEXT_PUBLIC_APP_URL") },
     { name: "ADMIN_EMAILS", group: "App", required: "optional", present: p("ADMIN_EMAILS") },
+    { name: "OPTOUT_SECRET", group: "App", required: "optional", present: Boolean(optOutSecret()) },
   ];
 }

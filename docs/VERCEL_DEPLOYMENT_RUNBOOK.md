@@ -138,8 +138,9 @@ Once the deployed URL is known, register it with Supabase Auth:
 
 > Apply migrations in this exact order against your Supabase project **before**
 > production traffic:
-> `supabase/migrations/0001_init.sql` → `0002_rls.sql` → `0003_alpha_columns.sql`.
-> `0003` is additive / non-destructive. RLS is enabled on all 14 tables;
+> `supabase/migrations/0001_init.sql` → `0002_rls.sql` → `0003_alpha_columns.sql`
+> → `0004_request_ready_status.sql` → `0005_indexes.sql`.
+> `0003`/`0004`/`0005` are additive / non-destructive. RLS is enabled on all 14 tables;
 > `subscriptions` is member-**read-only** (writes only via the service-role
 > Stripe webhook).
 

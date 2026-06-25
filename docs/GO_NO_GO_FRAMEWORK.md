@@ -25,7 +25,7 @@ Profile API), **owner-approved** (nothing auto-posts), and **compliance-aware**.
 - [ ] Unit tests pass (`npm run test` — 85 unit tests verified passing)
 - [ ] Build passes (`npm run build` — green, 21 routes)
 - [ ] Type + lint clean (`npm run typecheck` clean; `npm run lint` clean)
-- [ ] Supabase configured (`NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY` set; migrations `0001_init.sql` → `0002_rls.sql` → `0003_alpha_columns.sql` applied in order; RLS on all 14 tables)
+- [ ] Supabase configured (`NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY` set; migrations `0001_init.sql` → `0002_rls.sql` → `0003_alpha_columns.sql` → `0004_request_ready_status.sql` → `0005_indexes.sql` applied in order; RLS on all 14 tables)
 - [ ] Vercel deployment succeeds (note: `npm run seed` is a local/ops script and does **not** run during a Vercel build)
 - [ ] Smoke test passes (`npm run test:e2e` — 4 Playwright smoke tests verified passing)
 - [ ] Demo seed works (`npm run seed` creates "Sunshine Plumbing (Demo)" with 8 customers, 5 reviews, reply drafts, a negative-review alert, an approved testimonial, and a social post)

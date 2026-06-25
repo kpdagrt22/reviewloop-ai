@@ -63,6 +63,10 @@ export function AuthForm({
         <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{state.error}</p>
       ) : null}
 
+      {state?.notice ? (
+        <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">{state.notice}</p>
+      ) : null}
+
       <Button type="submit" className="w-full" disabled={pending}>
         {pending ? "Please wait…" : mode === "login" ? "Log in" : "Create account"}
       </Button>

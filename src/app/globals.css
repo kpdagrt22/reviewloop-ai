@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-gray-50 text-gray-900 antialiased;
+}
+
+/* Reusable component classes -------------------------------------------- */
+@layer components {
+  .container-page {
+    @apply mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8;
+  }
+  .card {
+    @apply rounded-xl border border-gray-200 bg-white shadow-sm;
+  }
+  .card-body {
+    @apply p-5;
+  }
+  .label {
+    @apply mb-1 block text-sm font-medium text-gray-700;
+  }
+  .input {
+    @apply w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm
+      outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100
+      disabled:cursor-not-allowed disabled:bg-gray-50;
+  }
+  .field-error {
+    @apply mt-1 text-xs text-red-600;
+  }
+}

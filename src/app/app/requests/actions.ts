@@ -113,11 +113,12 @@ export async function createRequestAction(
 
   // Stage only: leave the request as "ready" to send later, don't deliver now.
   if (stage === "ready") {
-    await supabase
+    const { error: readyErr } = await supabase
       .from("review_requests")
       .update({ status: "ready" })
       .eq("id", request.id)
       .eq("organization_id", org.id);
+    if (readyErr) return { error: readyErr.message || "Could not save the request as ready." };
     revalidatePath("/app/requests");
     return { ok: true, message: "Saved as ready to send." };
   }
@@ -138,12 +139,16 @@ export async function createRequestAction(
     deliveryNote = res.via === "mock" ? "Logged (SMS mock — no Twilio key)." : "SMS sent.";
   }
 
-  // Mark as sent.
-  await supabase
+  // Mark as sent. The message may already have been delivered above, so if the
+  // status write fails we surface it honestly rather than reporting success.
+  const { error: sentErr } = await supabase
     .from("review_requests")
     .update({ status: "sent", sent_at: new Date().toISOString() })
     .eq("id", request.id)
     .eq("organization_id", org.id);
+  if (sentErr) {
+    return { error: sentErr.message || "Could not update the request status." };
+  }
 
   revalidatePath("/app/requests");
   return { ok: true, message: deliveryNote };

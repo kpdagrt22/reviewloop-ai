@@ -25,7 +25,12 @@ export function TestimonialComposer({
   const [platform, setPlatform] = useState("facebook");
 
   return (
-    <div className="grid gap-6 md:grid-cols-2">
+    <div className="space-y-4">
+      <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+        Confirm you have the customer&apos;s permission to publish their words and name.
+        Republishing a review as marketing may require their consent.
+      </div>
+      <div className="grid gap-6 md:grid-cols-2">
       {/* Testimonial */}
       <div>
         <h3 className="font-semibold text-gray-900">Testimonial card</h3>
@@ -94,6 +99,7 @@ export function TestimonialComposer({
             <Button type="submit">Save social post</Button>
           </form>
         </div>
+      </div>
       </div>
     </div>
   );

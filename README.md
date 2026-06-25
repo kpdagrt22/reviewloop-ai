@@ -21,7 +21,7 @@ automatically — the owner approves everything.
 ## Tech stack
 
 - **Next.js** (App Router) + **TypeScript** + **Tailwind CSS**
-- **Supabase** — Postgres, Auth, Storage, Row Level Security
+- **Supabase** — Postgres, Auth, Row Level Security
 - **AI provider abstraction** — `mock` (default, no key) / `openai` / `anthropic`
 - **Zod** validation, **React Hook Form**–friendly forms
 - **Stripe** (optional) subscription abstraction
@@ -66,7 +66,7 @@ configured. The dashboard requires Supabase + a signed‑in user.
 | `AI_PROVIDER` | – | `mock` (default), `openai`, or `anthropic` |
 | `OPENAI_API_KEY` | – | Used when `AI_PROVIDER=openai` |
 | `ANTHROPIC_API_KEY` | – | Used when `AI_PROVIDER=anthropic` |
-| `RESEND_API_KEY`, `RESEND_FROM_EMAIL` | – | Email review requests (else mocked) |
+| `RESEND_API_KEY`, `FROM_EMAIL` | – | Email review requests (else mocked) |
 | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_MESSAGING_SERVICE_SID` | – | SMS review requests (else mocked) |
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | – | Billing (else "Billing not configured") |
 | `STRIPE_PRICE_STARTER/PRO/BUSINESS/AGENCY` | – | Stripe Price IDs per plan |
@@ -119,7 +119,7 @@ is missing, the app logs a warning and falls back to mock.
 
 ## Optional email / SMS setup
 
-- **Email (Resend):** set `RESEND_API_KEY` and `RESEND_FROM_EMAIL`. Without
+- **Email (Resend):** set `RESEND_API_KEY` and `FROM_EMAIL`. Without
   them, "send email" requests are logged to the console (mock) and still recorded.
 - **SMS (Twilio):** set the three `TWILIO_*` vars. Without them, SMS is mocked.
 
@@ -134,6 +134,8 @@ Messaging always respects consent and opt‑out (see
 npm run test        # Vitest unit tests (schema, rules, status machine, report, CSV, mock AI)
 npm run typecheck   # tsc --noEmit
 npm run test:e2e    # Playwright smoke tests (boots dev server automatically)
+npm run verify:env  # check env configuration (never prints secret values)
+npm run seed        # seed a demo org (needs SUPABASE_SERVICE_ROLE_KEY)
 ```
 
 Unit tests cover the business‑critical, provider‑independent logic:

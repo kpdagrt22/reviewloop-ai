@@ -177,7 +177,7 @@ export default async function ReviewDetailPage({
             </p>
             <TestimonialComposer
               reviewId={review.id}
-              defaultQuote={review.review_text ?? ""}
+              defaultQuote={analysis?.testimonial_text || review.review_text || ""}
               defaultName={review.reviewer_name ?? ""}
               defaultServiceType={review.platform ?? ""}
               defaultSocialPost={analysis?.social_post_draft || buildFallbackPost(review, org.name)}

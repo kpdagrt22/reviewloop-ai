@@ -1,0 +1,9 @@
+name,email,phone,service_date,service_type,consent_email,consent_sms
+Maria Gonzalez,maria@example.com,+15550100001,2026-06-20,Drain cleaning,true,false
+James Patel,james@example.com,+15550100002,2026-06-21,Water heater repair,true,true
+Aisha Khan,aisha@example.com,,2026-06-22,Leak repair,false,false
+Tom Becker,tom@example.com,+15550100004,2026-06-22,Faucet install,true,false
+Linda Rossi,linda@example.com,+15550100005,2026-06-23,Pipe replacement,true,true
+Chris Nguyen,chris@example.com,,2026-06-23,Sump pump,false,false
+Grace Liu,grace@example.com,+15550100007,2026-06-24,Toilet repair,true,false
+Sam Carter,sam@example.com,+15550100008,2026-06-24,Garbage disposal,true,false

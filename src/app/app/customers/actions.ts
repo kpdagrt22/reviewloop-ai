@@ -52,6 +52,51 @@ export async function addCustomerAction(
   return { ok: true };
 }
 
+/** Edit an existing customer (org-scoped; validated with the same schema). */
+export async function editCustomerAction(
+  _prev: CustomerFormState,
+  formData: FormData,
+): Promise<CustomerFormState> {
+  const org = await requireOrg();
+  const id = str(formData.get("customerId"));
+  if (!id) return { error: "Missing customer." };
+
+  const parsed = customerSchema.safeParse({
+    name: str(formData.get("name")),
+    email: str(formData.get("email")),
+    phone: str(formData.get("phone")),
+    serviceDate: str(formData.get("serviceDate")),
+    serviceType: str(formData.get("serviceType")),
+    consentEmail: bool(formData.get("consentEmail")),
+    consentSms: bool(formData.get("consentSms")),
+    notes: str(formData.get("notes")),
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Please check the form." };
+  }
+  const d = parsed.data;
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("customers")
+    .update({
+      name: d.name,
+      email: d.email || null,
+      phone: d.phone || null,
+      service_date: d.serviceDate || null,
+      service_type: d.serviceType || null,
+      consent_email: d.consentEmail,
+      consent_sms: d.consentSms,
+      notes: d.notes || null,
+    })
+    .eq("id", id)
+    .eq("organization_id", org.id);
+  if (error) return { error: error.message };
+
+  revalidatePath("/app/customers");
+  return { ok: true };
+}
+
 /** Toggle a customer's opt-out flag (compliance: never message opted-out). */
 export async function setOptOutAction(formData: FormData): Promise<void> {
   const org = await requireOrg();

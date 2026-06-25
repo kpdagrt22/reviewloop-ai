@@ -28,9 +28,12 @@ export async function sendSms(params: SendSmsParams): Promise<SmsResult> {
       process.env.TWILIO_ACCOUNT_SID!,
       process.env.TWILIO_AUTH_TOKEN!,
     );
+    // Prefer a Messaging Service SID; fall back to a from phone number.
+    const sid = process.env.TWILIO_MESSAGING_SERVICE_SID;
+    const from = process.env.TWILIO_PHONE_NUMBER;
     const msg = await client.messages.create({
       to: params.to,
-      messagingServiceSid: process.env.TWILIO_MESSAGING_SERVICE_SID!,
+      ...(sid ? { messagingServiceSid: sid } : { from: from! }),
       body: params.body,
     });
     return { ok: true, via: "twilio", id: msg.sid };

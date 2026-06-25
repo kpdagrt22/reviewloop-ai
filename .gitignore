@@ -17,9 +17,11 @@ next-env.d.ts
 /playwright-report
 /.playwright
 
-# env
+# env — ignore ALL env files (incl. .env.production / .env.development),
+# but keep the committed template.
 .env
-.env*.local
+.env.*
+!.env.example
 
 # misc
 .DS_Store

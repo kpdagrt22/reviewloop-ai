@@ -1,5 +1,6 @@
-import { requireOrg } from "@/lib/auth/session";
+import { requireOrg, getUser } from "@/lib/auth/session";
 import { loadAdminDiagnostics } from "@/lib/data/admin";
+import { adminEmails, isAdminEmail } from "@/lib/env";
 import { Badge } from "@/components/ui/badge";
 import { StatCard } from "@/components/ui/card";
 
@@ -10,6 +11,31 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
   const org = await requireOrg();
+  const user = await getUser();
+
+  // Access control: a configured ADMIN_EMAILS allowlist gates this page. When no
+  // allowlist is set, fall back to the organization owner only — never open.
+  const allowlist = adminEmails();
+  const authorized =
+    isAdminEmail(user?.email) ||
+    (allowlist.length === 0 && user?.id === org.owner_id);
+
+  if (!authorized) {
+    return (
+      <div className="mx-auto max-w-lg">
+        <div className="card">
+          <div className="card-body text-center">
+            <h1 className="text-xl font-semibold text-gray-900">Restricted</h1>
+            <p className="mt-2 text-sm text-gray-500">
+              The internal admin/debug page is limited to administrators. Ask an
+              owner to add your email to <code>ADMIN_EMAILS</code>.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const diag = await loadAdminDiagnostics(org.id);
 
   return (

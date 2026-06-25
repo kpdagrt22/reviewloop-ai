@@ -8,6 +8,7 @@ import { renderDefaultRequest } from "@/lib/messaging/templates";
 import { sendEmail } from "@/lib/messaging/email";
 import { sendSms } from "@/lib/messaging/sms";
 import { assertTransition, type RequestStatus } from "@/lib/reviews/request-status";
+import { checkReviewRequestQuota } from "@/lib/billing/usage";
 
 export interface RequestActionState {
   error?: string;
@@ -17,15 +18,19 @@ export interface RequestActionState {
 
 const str = (v: FormDataEntryValue | null) => (v == null ? "" : String(v).trim());
 
-/** Best review link to use for an org (Google preferred). */
+/** Best review link to use for an org (Google preferred, then the rest). */
 function reviewLinkFor(org: {
   google_review_link: string | null;
   facebook_review_link: string | null;
+  yelp_review_link?: string | null;
+  trustpilot_review_link?: string | null;
   other_review_link: string | null;
 }): string {
   return (
     org.google_review_link ||
     org.facebook_review_link ||
+    org.yelp_review_link ||
+    org.trustpilot_review_link ||
     org.other_review_link ||
     ""
   );
@@ -46,12 +51,20 @@ export async function createRequestAction(
     | "manual"
     | "email"
     | "sms";
+  // "send" (default) advances to sent; "ready" stages the request without sending.
+  const stage = str(formData.get("stage")) === "ready" ? "ready" : "send";
 
   if (!customerId) return { error: "Pick a customer first." };
 
   const link = reviewLinkFor(org);
   if (!link) {
     return { error: "Add a review link in Settings before sending requests." };
+  }
+
+  // Soft monthly plan limit (only blocks when real billing is configured).
+  const quota = await checkReviewRequestQuota(org.id);
+  if (!quota.allowed) {
+    return { error: quota.reason ?? "Monthly review request limit reached." };
   }
 
   const supabase = await createClient();
@@ -97,6 +110,17 @@ export async function createRequestAction(
     .select("id")
     .single();
   if (insErr || !request) return { error: insErr?.message ?? "Could not create request." };
+
+  // Stage only: leave the request as "ready" to send later, don't deliver now.
+  if (stage === "ready") {
+    await supabase
+      .from("review_requests")
+      .update({ status: "ready" })
+      .eq("id", request.id)
+      .eq("organization_id", org.id);
+    revalidatePath("/app/requests");
+    return { ok: true, message: "Saved as ready to send." };
+  }
 
   let deliveryNote = "Message ready to copy and send manually.";
   if (channel === "email") {

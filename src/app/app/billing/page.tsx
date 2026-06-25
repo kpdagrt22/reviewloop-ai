@@ -1,7 +1,8 @@
 import { requireOrg } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
-import { PLANS, SETUP_SERVICE } from "@/lib/billing/plans";
+import { PLANS, SETUP_SERVICE, getPlan } from "@/lib/billing/plans";
 import { billingConfigured } from "@/lib/billing/stripe";
+import { getMonthlyUsage, resolvePlanId } from "@/lib/billing/usage";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfigNotice } from "@/components/app/config-notice";
@@ -18,6 +19,13 @@ export default async function BillingPage() {
     .eq("organization_id", org.id)
     .maybeSingle();
 
+  const [usage, planId] = await Promise.all([
+    getMonthlyUsage(org.id),
+    resolvePlanId(org.id),
+  ]);
+  const quota = getPlan(planId).requestQuota;
+  const usagePct = quota > 0 ? Math.min(100, Math.round((usage.reviewRequests / quota) * 100)) : 0;
+
   const configured = billingConfigured();
 
   return (
@@ -30,7 +38,7 @@ export default async function BillingPage() {
       {!configured ? (
         <ConfigNotice
           title="Billing not configured"
-          body="Stripe keys are not set. Add STRIPE_SECRET_KEY and the STRIPE_PRICE_* env vars to enable checkout. You can still use the full app without billing."
+          body="Stripe keys are not set. Add STRIPE_SECRET_KEY and the NEXT_PUBLIC_STRIPE_PRICE_* env vars to enable checkout. You can still use the full app without billing."
         />
       ) : null}
 
@@ -47,6 +55,39 @@ export default async function BillingPage() {
               {sub?.status ?? "no subscription"}
             </Badge>
           </div>
+        </div>
+      </div>
+
+      {/* Usage this month */}
+      <div className="card">
+        <div className="card-body">
+          <div className="flex items-center justify-between">
+            <h2 className="font-semibold text-gray-900">Usage this month</h2>
+            <span className="text-sm text-gray-500">
+              Plan limit: {quota.toLocaleString()} review requests
+            </span>
+          </div>
+          <div className="mt-3 flex items-center gap-3">
+            <div className="h-3 flex-1 overflow-hidden rounded-full bg-gray-100">
+              <div
+                className={`h-full ${usagePct >= 100 ? "bg-red-500" : "bg-brand-500"}`}
+                style={{ width: `${usagePct}%` }}
+              />
+            </div>
+            <span className="w-28 shrink-0 text-right text-sm text-gray-700">
+              {usage.reviewRequests.toLocaleString()} / {quota.toLocaleString()}
+            </span>
+          </div>
+          <div className="mt-3 grid grid-cols-2 gap-3 text-sm text-gray-600 sm:grid-cols-3">
+            <span>{usage.reviewRequests} review requests</span>
+            <span>{usage.aiReplyDrafts} AI reply drafts</span>
+            <span>{usage.customers} customers</span>
+          </div>
+          {!configured ? (
+            <p className="mt-3 text-xs text-gray-400">
+              Limits are shown for reference only and are not enforced until billing is configured.
+            </p>
+          ) : null}
         </div>
       </div>
 

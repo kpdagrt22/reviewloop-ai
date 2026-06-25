@@ -21,6 +21,8 @@ export interface WeeklyReport {
   reviewsAdded: number;
   averageRating: number | null;
   breakdown: { positive: number; neutral: number; negative: number };
+  /** Count of reviews per star rating, 1..5. */
+  ratingDistribution: { 1: number; 2: number; 3: number; 4: number; 5: number };
   pendingReplies: number;
   negativeNeedingAttention: number;
   testimonialCandidates: number;
@@ -60,6 +62,13 @@ export function computeWeeklyReport(input: {
     breakdown[s] += 1;
   }
 
+  const ratingDistribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  for (const r of reviews) {
+    if (typeof r.rating === "number" && r.rating >= 1 && r.rating <= 5) {
+      ratingDistribution[r.rating as 1 | 2 | 3 | 4 | 5] += 1;
+    }
+  }
+
   const negativeNeedingAttention = reviews.filter((r) =>
     shouldEscalate(r.rating, {
       severity: r.severity ?? "low",
@@ -79,6 +88,7 @@ export function computeWeeklyReport(input: {
     reviewsAdded: reviews.length,
     averageRating,
     breakdown,
+    ratingDistribution,
     pendingReplies,
     negativeNeedingAttention,
     testimonialCandidates,

@@ -5,13 +5,15 @@ required; AI/email/SMS/billing are optional and degrade gracefully.
 
 ## 1. Supabase project
 1. Create a Supabase project.
-2. Apply migrations (in order): `supabase/migrations/0001_init.sql`, then
-   `0002_rls.sql`.
+2. Apply migrations (in order): `0001_init.sql` → `0002_rls.sql` →
+   `0003_alpha_columns.sql` (all in `supabase/migrations/`).
    - CLI: `supabase link --project-ref <ref>` then `supabase db push`.
    - Or paste each file into the SQL editor and run.
 3. Auth → Providers: enable Email. For the smoothest flow, decide whether to
    require email confirmation (off = instant session after sign‑up).
 4. Copy the Project URL, anon key, and service_role key.
+
+See `docs/SUPABASE_SETUP.md` for a full walkthrough (RLS verification, seeding).
 
 ## 2. Deploy the app (Vercel)
 1. Import the repo into Vercel (framework auto‑detected as Next.js).
@@ -21,19 +23,27 @@ required; AI/email/SMS/billing are optional and degrade gracefully.
    ```
    NEXT_PUBLIC_SUPABASE_URL=
    NEXT_PUBLIC_SUPABASE_ANON_KEY=
-   SUPABASE_SERVICE_ROLE_KEY=        # needed only if billing is enabled
    NEXT_PUBLIC_APP_URL=https://your-domain.com
    AI_PROVIDER=mock                  # or openai / anthropic
+   ```
+
+   **Required for billing (Stripe)**
+   ```
+   SUPABASE_SERVICE_ROLE_KEY=        # webhook writes subscription state past RLS
+   STRIPE_SECRET_KEY=
+   STRIPE_WEBHOOK_SECRET=
+   NEXT_PUBLIC_STRIPE_PRICE_STARTER= / _PRO= / _BUSINESS= / _AGENCY=
    ```
 
    **Optional (enable as needed)**
    ```
    OPENAI_API_KEY= / ANTHROPIC_API_KEY=
-   RESEND_API_KEY= / RESEND_FROM_EMAIL=
-   TWILIO_ACCOUNT_SID= / TWILIO_AUTH_TOKEN= / TWILIO_MESSAGING_SERVICE_SID=
-   STRIPE_SECRET_KEY= / STRIPE_WEBHOOK_SECRET= / NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
-   STRIPE_PRICE_STARTER= / STRIPE_PRICE_PRO= / STRIPE_PRICE_BUSINESS= / STRIPE_PRICE_AGENCY=
+   RESEND_API_KEY= / FROM_EMAIL=
+   TWILIO_ACCOUNT_SID= / TWILIO_AUTH_TOKEN= / TWILIO_MESSAGING_SERVICE_SID= / TWILIO_PHONE_NUMBER=
+   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
+   ADMIN_EMAILS=                     # allowlist for the /app/admin debug page
    ```
+   Run `npm run verify:env` locally to confirm configuration (never prints secrets).
 3. Deploy. Build command `next build`, output is the default `.next`.
 
 > The `/app/**` routes are `force-dynamic`, so the build succeeds even before
@@ -45,7 +55,7 @@ and a middleware that refreshes them. Ensure `NEXT_PUBLIC_APP_URL` matches your
 deployed domain.
 
 ## 4. Stripe (only if billing is enabled)
-1. Create the four subscription Prices and set `STRIPE_PRICE_*`.
+1. Create the four subscription Prices and set `NEXT_PUBLIC_STRIPE_PRICE_*`.
 2. Add a webhook endpoint pointing at `https://your-domain.com/api/stripe/webhook`
    for events: `checkout.session.completed`, `customer.subscription.updated`,
    `customer.subscription.deleted`. Put the signing secret in

@@ -42,6 +42,33 @@ export default async function ReportPage() {
         </div>
       </div>
 
+      <div className="card">
+        <div className="card-body">
+          <h2 className="font-semibold text-gray-900">Rating distribution</h2>
+          <div className="mt-4 space-y-2">
+            {([5, 4, 3, 2, 1] as const).map((star) => {
+              const count = report.ratingDistribution[star];
+              const pct =
+                report.reviewsAdded > 0
+                  ? Math.round((count / report.reviewsAdded) * 100)
+                  : 0;
+              return (
+                <div key={star} className="flex items-center gap-3 text-sm">
+                  <span className="w-10 shrink-0 text-gray-500">{star}★</span>
+                  <div className="h-3 flex-1 overflow-hidden rounded-full bg-gray-100">
+                    <div
+                      className={`h-full ${star >= 4 ? "bg-green-500" : star === 3 ? "bg-yellow-400" : "bg-red-400"}`}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                  <span className="w-8 shrink-0 text-right text-gray-600">{count}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
       <div className="grid gap-4 sm:grid-cols-3">
         <StatCard label="Pending replies" value={report.pendingReplies} />
         <StatCard label="Testimonial candidates" value={report.testimonialCandidates} />

@@ -20,15 +20,15 @@ export async function createReviewAction(
   formData: FormData,
 ): Promise<ReviewFormState> {
   const org = await requireOrg();
-  const ratingRaw = str(formData.get("rating"));
   const parsed = reviewSchema.safeParse({
     platform: str(formData.get("platform")) || "Google",
-    rating: ratingRaw === "" ? null : Number(ratingRaw),
+    rating: str(formData.get("rating")),
     reviewerName: str(formData.get("reviewerName")),
     reviewText: str(formData.get("reviewText")),
     reviewUrl: str(formData.get("reviewUrl")),
     reviewDate: str(formData.get("reviewDate")),
     customerId: str(formData.get("customerId")),
+    reviewRequestId: str(formData.get("reviewRequestId")),
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Please check the form." };
@@ -41,13 +41,14 @@ export async function createReviewAction(
     .insert({
       organization_id: org.id,
       customer_id: d.customerId || null,
+      review_request_id: d.reviewRequestId || null,
       platform: d.platform,
-      rating: d.rating ?? null,
+      rating: d.rating,
       reviewer_name: d.reviewerName || null,
       review_text: d.reviewText,
       review_url: d.reviewUrl || null,
       review_date: d.reviewDate || null,
-      sentiment: ratingToSentiment(d.rating ?? null),
+      sentiment: ratingToSentiment(d.rating),
       status: "new",
     })
     .select("id, platform, rating, reviewer_name, review_text, status")
@@ -59,6 +60,16 @@ export async function createReviewAction(
 
   // Run AI analysis (mock or live) and persist the draft + side effects.
   await analyzeAndPersist(supabase, org, review);
+
+  // If this review came from a tracked request, mark that request completed.
+  if (d.reviewRequestId) {
+    await supabase
+      .from("review_requests")
+      .update({ status: "completed", completed_at: new Date().toISOString() })
+      .eq("id", d.reviewRequestId)
+      .eq("organization_id", org.id);
+    revalidatePath("/app/requests");
+  }
 
   revalidatePath("/app/reviews");
   redirect(`/app/reviews/${review.id}`);

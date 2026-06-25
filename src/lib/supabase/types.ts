@@ -30,9 +30,12 @@ export interface Database {
         phone: string | null;
         google_review_link: string | null;
         facebook_review_link: string | null;
+        yelp_review_link: string | null;
+        trustpilot_review_link: string | null;
         other_review_link: string | null;
         brand_tone: string;
         escalation_email: string | null;
+        default_request_channel: string;
         created_at: Timestamp;
         updated_at: Timestamp;
       }>;
@@ -97,6 +100,7 @@ export interface Database {
         id: UUID;
         organization_id: UUID;
         customer_id: UUID | null;
+        review_request_id: UUID | null;
         platform: string | null;
         rating: number | null;
         reviewer_name: string | null;
@@ -117,6 +121,7 @@ export interface Database {
         status: string;
         ai_confidence: number | null;
         created_at: Timestamp;
+        updated_at: Timestamp;
       }>;
       testimonials: Row<{
         id: UUID;

@@ -34,7 +34,7 @@ describe("MockAIProvider.analyzeReview", () => {
     expect(out.testimonial_candidate).toBe(false);
   });
 
-  it("marks a 5-star review as a testimonial candidate with a social post", async () => {
+  it("marks a 5-star review as a testimonial candidate with social + testimonial text", async () => {
     const out = await provider.analyzeReview({
       ...baseInput,
       rating: 5,
@@ -43,6 +43,20 @@ describe("MockAIProvider.analyzeReview", () => {
     expect(out.sentiment).toBe("positive");
     expect(out.testimonial_candidate).toBe(true);
     expect(out.social_post_draft.length).toBeGreaterThan(0);
+    expect(out.testimonial_text.length).toBeGreaterThan(0);
+    // Testimonial reuses the customer's own words, not fabricated content.
+    expect(out.testimonial_text).toContain("Fantastic work");
+  });
+
+  it("leaves testimonial_text empty for a negative review", async () => {
+    const out = await provider.analyzeReview({
+      ...baseInput,
+      rating: 1,
+      review_text: "Terrible and late.",
+    });
+    expect(out.testimonial_candidate).toBe(false);
+    expect(out.testimonial_text).toBe("");
+    expect(out.social_post_draft).toBe("");
   });
 
   it("infers sentiment from text when rating is unknown", async () => {

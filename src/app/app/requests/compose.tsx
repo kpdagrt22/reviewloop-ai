@@ -131,8 +131,21 @@ export function ComposeRequest({
               <form action={formAction} className="contents">
                 <input type="hidden" name="customerId" value={customerId} />
                 <input type="hidden" name="channel" value={channel} />
+                {channel === "manual" ? (
+                  <Button
+                    type="submit"
+                    name="stage"
+                    value="ready"
+                    variant="outline"
+                    disabled={pending || !!customer?.opt_out}
+                  >
+                    Save as ready
+                  </Button>
+                ) : null}
                 <Button
                   type="submit"
+                  name="stage"
+                  value="send"
                   disabled={
                     pending ||
                     !!customer?.opt_out ||

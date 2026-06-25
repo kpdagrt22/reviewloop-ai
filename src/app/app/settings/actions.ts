@@ -11,14 +11,19 @@ export interface SettingsState {
   error?: string;
 }
 
+const REQUEST_CHANNELS = ["manual", "email", "sms", "both"] as const;
+
 const settingsSchema = z.object({
   name: z.string().trim().min(2, "Business name is required"),
   phone: z.string().trim().optional().or(z.literal("")),
   website: z.string().trim().url().optional().or(z.literal("")),
   googleReviewLink: z.string().trim().url().optional().or(z.literal("")),
   facebookReviewLink: z.string().trim().url().optional().or(z.literal("")),
+  yelpReviewLink: z.string().trim().url().optional().or(z.literal("")),
+  trustpilotReviewLink: z.string().trim().url().optional().or(z.literal("")),
   otherReviewLink: z.string().trim().url().optional().or(z.literal("")),
   brandTone: z.enum(BRAND_TONES),
+  defaultRequestChannel: z.enum(REQUEST_CHANNELS),
   escalationEmail: z.string().trim().email().optional().or(z.literal("")),
 });
 
@@ -35,8 +40,11 @@ export async function updateSettingsAction(
     website: str(formData.get("website")),
     googleReviewLink: str(formData.get("googleReviewLink")),
     facebookReviewLink: str(formData.get("facebookReviewLink")),
+    yelpReviewLink: str(formData.get("yelpReviewLink")),
+    trustpilotReviewLink: str(formData.get("trustpilotReviewLink")),
     otherReviewLink: str(formData.get("otherReviewLink")),
     brandTone: str(formData.get("brandTone")) || "professional",
+    defaultRequestChannel: str(formData.get("defaultRequestChannel")) || "manual",
     escalationEmail: str(formData.get("escalationEmail")),
   });
   if (!parsed.success) {
@@ -53,8 +61,11 @@ export async function updateSettingsAction(
       website: d.website || null,
       google_review_link: d.googleReviewLink || null,
       facebook_review_link: d.facebookReviewLink || null,
+      yelp_review_link: d.yelpReviewLink || null,
+      trustpilot_review_link: d.trustpilotReviewLink || null,
       other_review_link: d.otherReviewLink || null,
       brand_tone: d.brandTone,
+      default_request_channel: d.defaultRequestChannel,
       escalation_email: d.escalationEmail || null,
     })
     .eq("id", org.id);

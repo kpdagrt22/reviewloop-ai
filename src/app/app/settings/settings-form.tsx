@@ -49,12 +49,40 @@ export function SettingsForm({ org }: { org: Tables<"organizations"> }) {
               className="input"
             />
           </Field>
-          <Field label="Yelp / Trustpilot link">
+          <Field label="Yelp review link">
+            <input
+              name="yelpReviewLink"
+              defaultValue={org.yelp_review_link ?? ""}
+              className="input"
+              placeholder="https://yelp.com/biz/..."
+            />
+          </Field>
+          <Field label="Trustpilot review link">
+            <input
+              name="trustpilotReviewLink"
+              defaultValue={org.trustpilot_review_link ?? ""}
+              className="input"
+              placeholder="https://trustpilot.com/review/..."
+            />
+          </Field>
+          <Field label="Other review link">
             <input
               name="otherReviewLink"
               defaultValue={org.other_review_link ?? ""}
               className="input"
             />
+          </Field>
+          <Field label="Default request channel">
+            <select
+              name="defaultRequestChannel"
+              defaultValue={org.default_request_channel ?? "manual"}
+              className="input"
+            >
+              <option value="manual">Manual (copy &amp; send yourself)</option>
+              <option value="email">Email</option>
+              <option value="sms">SMS</option>
+              <option value="both">Both</option>
+            </select>
           </Field>
           <Field label="Negative review escalation email">
             <input

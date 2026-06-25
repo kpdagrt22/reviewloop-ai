@@ -24,12 +24,19 @@ describe("reviewAnalysisSchema", () => {
     expect(res.success).toBe(true);
   });
 
-  it("defaults optional arrays and social post", () => {
+  it("defaults optional arrays, testimonial_text and social post", () => {
     const { key_points, avoid_phrases, social_post_draft, ...rest } = validAnalysis;
     const res = reviewAnalysisSchema.parse(rest);
     expect(res.key_points).toEqual([]);
     expect(res.avoid_phrases).toEqual([]);
     expect(res.social_post_draft).toBe("");
+    expect(res.testimonial_text).toBe("");
+  });
+
+  it("falls back to a valid reply_tone instead of throwing on a bad tone", () => {
+    const res = reviewAnalysisSchema.safeParse({ ...validAnalysis, reply_tone: "sarcastic" });
+    expect(res.success).toBe(true);
+    if (res.success) expect(res.data.reply_tone).toBe("professional");
   });
 
   it("rejects an invalid sentiment", () => {

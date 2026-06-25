@@ -10,11 +10,17 @@ export const reviewAnalysisSchema = z.object({
   severity: z.enum(["low", "medium", "high"]),
   should_escalate: z.boolean(),
   suggested_reply: z.string().min(1),
-  reply_tone: z.enum(["professional", "warm", "friendly", "premium", "casual"]),
+  // Resilient: an out-of-enum tone from a model falls back to "professional"
+  // rather than throwing and dropping the whole analysis to safeFallback.
+  reply_tone: z
+    .enum(["professional", "warm", "friendly", "premium", "casual"])
+    .catch("professional"),
   key_points: z.array(z.string()).default([]),
   apology_needed: z.boolean(),
   avoid_phrases: z.array(z.string()).default([]),
   testimonial_candidate: z.boolean(),
+  // AI-curated standalone testimonial (positive reviews only); "" otherwise.
+  testimonial_text: z.string().default(""),
   social_post_draft: z.string().default(""),
   confidence: z.number().min(0).max(1),
 });

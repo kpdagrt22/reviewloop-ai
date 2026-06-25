@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { credentialsSchema } from "@/lib/validation/schemas";
+import { safeNextPath } from "@/lib/utils/safe-redirect";
 
 export interface AuthState {
   error?: string;
@@ -60,8 +61,7 @@ export async function signInAction(
   });
   if (error) return { error: error.message };
 
-  const next = String(formData.get("next") ?? "/app");
-  redirect(next.startsWith("/") ? next : "/app");
+  redirect(safeNextPath(formData.get("next")));
 }
 
 /** Sign out and return to the marketing site. */

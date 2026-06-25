@@ -10,6 +10,7 @@ const NAV = [
   { href: "/app/requests", label: "Review requests", icon: "✉️" },
   { href: "/app/reviews", label: "Reviews", icon: "⭐" },
   { href: "/app/testimonials", label: "Testimonials", icon: "💬" },
+  { href: "/app/social", label: "Social posts", icon: "📣" },
   { href: "/app/report", label: "Weekly report", icon: "📈" },
   { href: "/app/billing", label: "Billing", icon: "💳" },
   { href: "/app/settings", label: "Settings", icon: "⚙️" },

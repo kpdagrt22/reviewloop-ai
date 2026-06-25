@@ -32,6 +32,14 @@ export interface FakeConfig {
   inserted?: Record<string, unknown>;
   /** Inject an error keyed by `${table}:${op}`, e.g. "review_requests:update". */
   errors?: Record<string, { message: string }>;
+  /**
+   * Strict scope guard. For each table, the listed columns MUST appear as filters
+   * (.eq/.gte) on every select/update/delete against that table, or the fake
+   * throws. Use this to make a dropped `organization_id` (or `created_at`) scope
+   * fail the test instead of silently passing. Not applied to insert/upsert,
+   * where scope lives in the row payload.
+   */
+  requiredFilters?: Record<string, string[]>;
 }
 
 interface QueryResult {
@@ -83,7 +91,8 @@ class Builder {
     this.filters.push([col, val]);
     return this;
   }
-  gte(): this {
+  gte(col: string, val: unknown): this {
+    this.filters.push([col, val]);
     return this;
   }
   lte(): this {
@@ -112,7 +121,23 @@ class Builder {
     return this.cfg.errors?.[`${this.table}:${this.op}`] ?? null;
   }
 
+  private assertRequiredFilters(): void {
+    if (this.op === "insert" || this.op === "upsert") return;
+    const required = this.cfg.requiredFilters?.[this.table];
+    if (!required) return;
+    const present = new Set(this.filters.map(([col]) => col));
+    for (const col of required) {
+      if (!present.has(col)) {
+        throw new Error(
+          `Fake Supabase: ${this.op} on "${this.table}" is missing required scope filter ` +
+            `.eq/.gte("${col}", …). A dropped scope filter must fail the test.`,
+        );
+      }
+    }
+  }
+
   private compute(): QueryResult {
+    this.assertRequiredFilters();
     const error = this.errorFor();
     if (this.op === "select") {
       if (this.head || this.count) {

@@ -1,11 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createFakeSupabase, findWrite, type FakeSupabase } from "./_supabase-mock";
+import {
+  createFakeSupabase,
+  findWrite,
+  type FakeConfig,
+  type FakeSupabase,
+} from "./_supabase-mock";
 
 /**
  * Server-action coverage for the review-request flow — the path that carries the
  * T1 fix (the 'ready' status) and the compliance gates (opt-out + consent). The
  * Supabase client, auth, and Next cache are mocked so the action runs under
  * vitest with no live services.
+ *
+ * Every fake is configured with `requiredFilters` so that if production code
+ * ever dropped an `organization_id` scope filter, these tests would THROW rather
+ * than silently pass.
  */
 
 const requireOrg = vi.fn();
@@ -31,14 +40,24 @@ const org = {
   escalation_email: null,
 };
 
+// Org-scoping that production code MUST apply on these tables.
+const SCOPED: FakeConfig["requiredFilters"] = {
+  customers: ["organization_id"],
+  review_requests: ["organization_id"],
+  ai_reply_drafts: ["organization_id"],
+  subscriptions: ["organization_id"],
+};
+
+function mkFake(cfg: FakeConfig): FakeSupabase {
+  const fake = createFakeSupabase({ ...cfg, requiredFilters: SCOPED });
+  createClient.mockResolvedValue(fake.client);
+  return fake;
+}
+
 function form(fields: Record<string, string>): FormData {
   const fd = new FormData();
   for (const [k, v] of Object.entries(fields)) fd.set(k, v);
   return fd;
-}
-
-function useFake(fake: FakeSupabase) {
-  createClient.mockResolvedValue(fake.client);
 }
 
 beforeEach(() => {
@@ -48,13 +67,12 @@ beforeEach(() => {
 
 describe("createRequestAction", () => {
   it("refuses to record a request for an opted-out customer", async () => {
-    const fake = createFakeSupabase({
+    const fake = mkFake({
       reads: {
         customers: { id: "c1", name: "Jane", opt_out: true, email: null, phone: null },
         subscriptions: null,
       },
     });
-    useFake(fake);
 
     const res = await createRequestAction({}, form({ customerId: "c1", channel: "manual", stage: "ready" }));
 
@@ -64,8 +82,7 @@ describe("createRequestAction", () => {
   });
 
   it("rejects an unsupported channel", async () => {
-    const fake = createFakeSupabase({ reads: { subscriptions: null } });
-    useFake(fake);
+    mkFake({ reads: { subscriptions: null } });
 
     const res = await createRequestAction({}, form({ customerId: "c1", channel: "carrier-pigeon" }));
 
@@ -73,7 +90,7 @@ describe("createRequestAction", () => {
   });
 
   it("blocks an email request without email consent", async () => {
-    const fake = createFakeSupabase({
+    mkFake({
       reads: {
         customers: {
           id: "c1",
@@ -87,15 +104,14 @@ describe("createRequestAction", () => {
         subscriptions: null,
       },
     });
-    useFake(fake);
 
     const res = await createRequestAction({}, form({ customerId: "c1", channel: "email", stage: "send" }));
 
     expect(res.error).toMatch(/consent/i);
   });
 
-  it("stages a manual request as 'ready' and reports success", async () => {
-    const fake = createFakeSupabase({
+  it("stages a manual request as 'ready', scoped to the org, and reports success", async () => {
+    const fake = mkFake({
       reads: {
         customers: {
           id: "c1",
@@ -110,20 +126,20 @@ describe("createRequestAction", () => {
       },
       inserted: { review_requests: { id: "req_1" } },
     });
-    useFake(fake);
 
     const res = await createRequestAction({}, form({ customerId: "c1", channel: "manual", stage: "ready" }));
 
     expect(res.ok).toBe(true);
     expect(res.message).toMatch(/ready/i);
-    // The row is inserted as draft, then advanced to 'ready' (the T1 path).
     expect(findWrite(fake, "review_requests", "insert")).toBeDefined();
     const update = findWrite(fake, "review_requests", "update");
     expect((update?.payload as Record<string, unknown>).status).toBe("ready");
+    // The status update must be scoped to the org (defense in depth + multi-tenant).
+    expect(update?.filters).toContainEqual(["organization_id", "org_1"]);
   });
 
   it("surfaces a DB error on the 'ready' write instead of faking success", async () => {
-    const fake = createFakeSupabase({
+    mkFake({
       reads: {
         customers: {
           id: "c1",
@@ -139,7 +155,6 @@ describe("createRequestAction", () => {
       inserted: { review_requests: { id: "req_1" } },
       errors: { "review_requests:update": { message: "check constraint violated" } },
     });
-    useFake(fake);
 
     const res = await createRequestAction({}, form({ customerId: "c1", channel: "manual", stage: "ready" }));
 
@@ -150,19 +165,16 @@ describe("createRequestAction", () => {
 
 describe("updateRequestStatusAction", () => {
   it("throws on an illegal transition (completed -> draft)", async () => {
-    const fake = createFakeSupabase();
-    useFake(fake);
+    const fake = mkFake({});
 
     await expect(
       updateRequestStatusAction(form({ requestId: "req_1", from: "completed", to: "draft" })),
     ).rejects.toThrow(/transition/i);
-    // No write should have been attempted.
     expect(findWrite(fake, "review_requests", "update")).toBeUndefined();
   });
 
-  it("advances a legal transition and stamps the timestamp", async () => {
-    const fake = createFakeSupabase();
-    useFake(fake);
+  it("advances a legal transition, stamps the timestamp, and stays org-scoped", async () => {
+    const fake = mkFake({});
 
     await updateRequestStatusAction(form({ requestId: "req_1", from: "sent", to: "completed" }));
 
@@ -170,5 +182,6 @@ describe("updateRequestStatusAction", () => {
     const payload = update?.payload as Record<string, unknown>;
     expect(payload.status).toBe("completed");
     expect(payload.completed_at).toBeDefined();
+    expect(update?.filters).toContainEqual(["organization_id", "org_1"]);
   });
 });

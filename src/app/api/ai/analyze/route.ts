@@ -13,10 +13,23 @@ export const dynamic = "force-dynamic";
  */
 const RATE_WINDOW_MS = 60_000;
 const RATE_MAX = 30;
+// Bound memory: if the map ever grows past this, sweep out fully-expired orgs so
+// dormant entries can't accumulate without limit on a long-lived instance.
+const RATE_MAX_ORGS = 10_000;
 const recentByOrg = new Map<string, number[]>();
+
+function sweepExpired(now: number): void {
+  for (const [key, times] of recentByOrg) {
+    const live = times.filter((t) => now - t < RATE_WINDOW_MS);
+    if (live.length === 0) recentByOrg.delete(key);
+    else recentByOrg.set(key, live);
+  }
+}
 
 function isRateLimited(orgId: string): boolean {
   const now = Date.now();
+  if (recentByOrg.size > RATE_MAX_ORGS) sweepExpired(now);
+
   const recent = (recentByOrg.get(orgId) ?? []).filter((t) => now - t < RATE_WINDOW_MS);
   recent.push(now);
   recentByOrg.set(orgId, recent);

@@ -9,9 +9,10 @@ import { test, expect } from "@playwright/test";
 
 test("landing page shows the hero and primary CTA", async ({ page }) => {
   await page.goto("/");
+  // Hero copy is intentionally neutral (no "guaranteed 5-star" framing).
   await expect(
     page.getByRole("heading", {
-      name: /get more 5-star reviews without chasing customers manually/i,
+      name: /get more genuine reviews/i,
     }),
   ).toBeVisible();
   await expect(page.getByRole("link", { name: /start review loop/i }).first()).toBeVisible();

@@ -4,6 +4,8 @@ import {
   type ReviewAnalysis,
 } from "@/lib/ai/schemas/review-analysis";
 import { containsProhibitedReplyContent, shouldEscalate } from "@/lib/reviews/rules";
+import { hasResend, publicEnv } from "@/lib/env";
+import { sendEmail } from "@/lib/messaging/email";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Tables } from "@/lib/supabase/types";
 
@@ -64,6 +66,20 @@ export async function analyzeAndPersist(
     replyText =
       "Thank you for your feedback. We take this seriously and would like to make it right — " +
       "please contact us directly so we can help.";
+    // Mark the log so an auditor can see the model attempted prohibited content
+    // (only override a clean "success"; keep "error" if the provider failed).
+    if (logStatus === "success") logStatus = "scrubbed";
+  }
+
+  // Defense in depth: also scrub the testimonial/social drafts the composer reads
+  // from the stored analysis, so prohibited content can't reach those surfaces.
+  if (containsProhibitedReplyContent(analysis.social_post_draft)) {
+    analysis.social_post_draft = "";
+    if (logStatus === "success") logStatus = "scrubbed";
+  }
+  if (containsProhibitedReplyContent(analysis.testimonial_text)) {
+    analysis.testimonial_text = "";
+    if (logStatus === "success") logStatus = "scrubbed";
   }
 
   const escalated = shouldEscalate(review.rating, analysis);
@@ -95,11 +111,11 @@ export async function analyzeAndPersist(
     .select("id")
     .single();
 
-  // 3) Escalation notification event.
+  // 3) Escalation notification event + optional email alert.
   if (escalated) {
     await supabase.from("notification_events").insert({
       organization_id: org.id,
-      event_type: "negative_review",
+      event_type: "negative_review_detected",
       metadata: {
         review_id: review.id,
         rating: review.rating,
@@ -108,6 +124,28 @@ export async function analyzeAndPersist(
         suggested_action: "Respond professionally and consider calling the customer.",
       },
     });
+
+    // Email the escalation address when configured (best-effort, non-blocking).
+    // We include only review fields that are already public; no private CRM data.
+    if (org.escalation_email && hasResend()) {
+      const link = `${publicEnv.appUrl}/app/reviews/${review.id}`;
+      await sendEmail({
+        to: org.escalation_email,
+        subject: `⚠️ Negative review needs attention — ${org.name}`,
+        body: [
+          `A review was flagged for ${org.name}.`,
+          ``,
+          `Platform: ${review.platform ?? "review"}`,
+          `Rating: ${review.rating ?? "n/a"}/5`,
+          `Reviewer: ${review.reviewer_name ?? "unknown"}`,
+          ``,
+          `Suggested action: Reply professionally and invite the customer to`,
+          `resolve it offline. Consider calling them.`,
+          ``,
+          `Open it here: ${link}`,
+        ].join("\n"),
+      }).catch(() => undefined);
+    }
   }
 
   // 4) AI call log.
@@ -139,6 +177,7 @@ function safeFallback(rating: number | null): ReviewAnalysis {
     apology_needed: negative,
     avoid_phrases: ["admitting legal fault", "sharing private customer details"],
     testimonial_candidate: rating !== null && rating >= 4,
+    testimonial_text: "",
     social_post_draft: "",
     confidence: 0.3,
   };

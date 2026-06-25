@@ -1,8 +1,11 @@
 import { describe, it, expect } from "vitest";
 import {
   canTransition,
+  canTransitionReviewRequestStatus,
   assertTransition,
   timestampFieldFor,
+  getReviewRequestStatusLabel,
+  getReviewRequestStatusBadgeVariant,
 } from "@/lib/reviews/request-status";
 
 describe("review request status transitions", () => {
@@ -46,5 +49,34 @@ describe("review request status transitions", () => {
     expect(timestampFieldFor("clicked")).toBe("clicked_at");
     expect(timestampFieldFor("completed")).toBe("completed_at");
     expect(timestampFieldFor("draft")).toBeNull();
+  });
+
+  it("supports the optional 'ready' staging state", () => {
+    expect(canTransition("draft", "ready")).toBe(true);
+    expect(canTransition("ready", "sent")).toBe(true);
+    expect(canTransition("ready", "cancelled")).toBe(true);
+    // cannot go backward from ready to draft, or skip from ready to clicked
+    expect(canTransition("ready", "draft")).toBe(false);
+    expect(canTransition("ready", "clicked")).toBe(false);
+  });
+
+  it("exposes the spec-named alias", () => {
+    expect(canTransitionReviewRequestStatus("draft", "ready")).toBe(true);
+    expect(canTransitionReviewRequestStatus("completed", "draft")).toBe(false);
+  });
+});
+
+describe("review request status presentation", () => {
+  it("returns human labels", () => {
+    expect(getReviewRequestStatusLabel("ready")).toBe("Ready to send");
+    expect(getReviewRequestStatusLabel("completed")).toBe("Completed");
+    expect(getReviewRequestStatusLabel("unknown")).toBe("unknown");
+  });
+
+  it("maps statuses to badge tones", () => {
+    expect(getReviewRequestStatusBadgeVariant("completed")).toBe("green");
+    expect(getReviewRequestStatusBadgeVariant("cancelled")).toBe("red");
+    expect(getReviewRequestStatusBadgeVariant("draft")).toBe("gray");
+    expect(getReviewRequestStatusBadgeVariant("weird")).toBe("gray");
   });
 });

@@ -25,12 +25,15 @@ Return a JSON object with exactly these fields:
   "apology_needed": boolean,
   "avoid_phrases": string[],
   "testimonial_candidate": boolean,
+  "testimonial_text": string,
   "social_post_draft": string,
   "confidence": number  // 0..1
 }
 
 Set testimonial_candidate true only for clearly positive reviews (>= 4 stars or strongly positive text).
-Set social_post_draft to a short, share-ready post only when testimonial_candidate is true; otherwise "".`;
+When testimonial_candidate is true, set testimonial_text to a concise quote drawn from the
+reviewer's OWN words (do not fabricate or embellish), and set social_post_draft to a short,
+share-ready post. When testimonial_candidate is false, set both to "".`;
 
 export function buildAnalysisPrompt(input: ReviewAnalysisInput): string {
   return [

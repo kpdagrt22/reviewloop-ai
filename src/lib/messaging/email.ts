@@ -1,4 +1,4 @@
-import { hasResend } from "@/lib/env";
+import { hasResend, fromEmail } from "@/lib/env";
 
 export interface SendEmailParams {
   to: string;
@@ -29,7 +29,7 @@ export async function sendEmail(params: SendEmailParams): Promise<SendResult> {
     const { Resend } = await import("resend");
     const resend = new Resend(process.env.RESEND_API_KEY!);
     const { data, error } = await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL!,
+      from: fromEmail(),
       to: params.to,
       subject: params.subject,
       text: params.body,

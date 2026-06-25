@@ -57,6 +57,21 @@ describe("computeWeeklyReport", () => {
     expect(report.breakdown).toEqual({ positive: 2, neutral: 1, negative: 1 });
   });
 
+  it("builds a 1..5 rating distribution and ignores null ratings", () => {
+    const report = computeWeeklyReport({
+      requests: [],
+      reviews: [
+        { rating: 5, sentiment: "positive" },
+        { rating: 5, sentiment: "positive" },
+        { rating: 4, sentiment: "positive" },
+        { rating: 1, sentiment: "negative" },
+        { rating: null, sentiment: "neutral" },
+      ],
+      drafts: [],
+    });
+    expect(report.ratingDistribution).toEqual({ 1: 1, 2: 0, 3: 0, 4: 1, 5: 2 });
+  });
+
   it("counts negatives needing attention and testimonial candidates", () => {
     const report = computeWeeklyReport({
       requests: [],

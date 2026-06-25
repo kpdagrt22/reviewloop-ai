@@ -64,15 +64,20 @@ export const customerSchema = z.object({
 });
 export type CustomerInput = z.infer<typeof customerSchema>;
 
-/** Manual review capture. */
+/** Manual review capture. Rating is required 1–5 per alpha spec. */
 export const reviewSchema = z.object({
   platform: z.string().trim().min(1, "Platform is required"),
-  rating: z.coerce.number().int().min(1).max(5).nullable().optional(),
+  rating: z.coerce
+    .number({ invalid_type_error: "Rating is required" })
+    .int()
+    .min(1, "Rating must be 1–5")
+    .max(5, "Rating must be 1–5"),
   reviewerName: z.string().trim().optional().or(z.literal("")),
   reviewText: z.string().trim().min(3, "Review text is required"),
   reviewUrl: optionalUrl,
   reviewDate: z.string().optional().or(z.literal("")),
   customerId: z.string().uuid().optional().or(z.literal("")),
+  reviewRequestId: z.string().uuid().optional().or(z.literal("")),
 });
 export type ReviewInput = z.infer<typeof reviewSchema>;
 

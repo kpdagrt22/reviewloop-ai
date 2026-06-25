@@ -38,7 +38,7 @@ export default function LandingPage() {
         <div className="container-page py-20 text-center">
           <Badge tone="blue" className="mb-4">No Google API required to start</Badge>
           <h1 className="mx-auto max-w-3xl text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
-            Get more 5-star reviews without chasing customers manually.
+            Get more genuine reviews — without chasing customers manually.
           </h1>
           <p className="mx-auto mt-5 max-w-2xl text-lg text-gray-600">
             Send review requests, draft professional replies, catch unhappy customers early,

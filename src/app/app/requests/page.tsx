@@ -6,17 +6,13 @@ import { updateRequestStatusAction } from "./actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfigNotice } from "@/components/app/config-notice";
-import type { RequestStatus } from "@/lib/reviews/request-status";
+import {
+  getReviewRequestStatusBadgeVariant,
+  getReviewRequestStatusLabel,
+  type RequestStatus,
+} from "@/lib/reviews/request-status";
 
 export const metadata = { title: "Review requests — ReviewLoop AI" };
-
-const statusTone: Record<string, "gray" | "blue" | "green" | "yellow" | "red"> = {
-  draft: "gray",
-  sent: "blue",
-  clicked: "yellow",
-  completed: "green",
-  cancelled: "red",
-};
 
 export default async function RequestsPage({
   searchParams,
@@ -43,7 +39,12 @@ export default async function RequestsPage({
   ]);
 
   const reviewLink =
-    org.google_review_link || org.facebook_review_link || org.other_review_link || "";
+    org.google_review_link ||
+    org.facebook_review_link ||
+    org.yelp_review_link ||
+    org.trustpilot_review_link ||
+    org.other_review_link ||
+    "";
 
   const customerName = new Map((customers ?? []).map((c) => [c.id, c.name]));
 
@@ -98,7 +99,9 @@ export default async function RequestsPage({
                       </td>
                       <td className="py-3 pr-4 capitalize text-gray-600">{r.channel}</td>
                       <td className="py-3 pr-4">
-                        <Badge tone={statusTone[r.status] ?? "gray"}>{r.status}</Badge>
+                        <Badge tone={getReviewRequestStatusBadgeVariant(r.status)}>
+                          {getReviewRequestStatusLabel(r.status)}
+                        </Badge>
                       </td>
                       <td className="py-3 pr-4">
                         <StatusActions id={r.id} status={r.status as RequestStatus} />
@@ -124,7 +127,12 @@ export default async function RequestsPage({
 
 function StatusActions({ id, status }: { id: string; status: RequestStatus }) {
   const next: { to: RequestStatus; label: string }[] = [];
-  if (status === "sent") {
+  if (status === "draft") {
+    next.push({ to: "sent", label: "Mark sent" });
+  } else if (status === "ready") {
+    next.push({ to: "sent", label: "Mark sent" });
+    next.push({ to: "cancelled", label: "Cancel" });
+  } else if (status === "sent") {
     next.push({ to: "clicked", label: "Mark clicked" });
     next.push({ to: "completed", label: "Mark completed" });
   } else if (status === "clicked") {

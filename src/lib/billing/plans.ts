@@ -23,7 +23,7 @@ export const PLANS: Plan[] = [
     priceMonthly: 19,
     requestQuota: 50,
     blurb: "For solo operators getting their first reviews flowing.",
-    stripePriceEnv: "STRIPE_PRICE_STARTER",
+    stripePriceEnv: "NEXT_PUBLIC_STRIPE_PRICE_STARTER",
     features: [
       "50 review requests / month",
       "Manual review capture",
@@ -38,7 +38,7 @@ export const PLANS: Plan[] = [
     requestQuota: 250,
     highlight: true,
     blurb: "For growing service businesses turning reviews into proof.",
-    stripePriceEnv: "STRIPE_PRICE_PRO",
+    stripePriceEnv: "NEXT_PUBLIC_STRIPE_PRICE_PRO",
     features: [
       "250 review requests / month",
       "AI replies + testimonials",
@@ -52,7 +52,7 @@ export const PLANS: Plan[] = [
     priceMonthly: 99,
     requestQuota: 1000,
     blurb: "For established shops that live and die by reputation.",
-    stripePriceEnv: "STRIPE_PRICE_BUSINESS",
+    stripePriceEnv: "NEXT_PUBLIC_STRIPE_PRICE_BUSINESS",
     features: [
       "1,000 review requests / month",
       "Negative review alerts & escalation email",
@@ -66,7 +66,7 @@ export const PLANS: Plan[] = [
     priceMonthly: 199,
     requestQuota: 5000,
     blurb: "For agencies managing reviews for many local businesses.",
-    stripePriceEnv: "STRIPE_PRICE_AGENCY",
+    stripePriceEnv: "NEXT_PUBLIC_STRIPE_PRICE_AGENCY",
     features: [
       "Multi-business support (placeholder)",
       "5,000 review requests / month",

@@ -28,6 +28,7 @@ export class MockAIProvider implements AIProvider {
 
     const reply = buildReply(input, sentiment);
     const social = testimonial ? buildSocialPost(input) : "";
+    const testimonialText = testimonial ? buildTestimonial(input) : "";
 
     const analysis: ReviewAnalysis = {
       sentiment,
@@ -43,6 +44,7 @@ export class MockAIProvider implements AIProvider {
         "offering incentives to change the review",
       ],
       testimonial_candidate: testimonial,
+      testimonial_text: testimonialText,
       social_post_draft: social,
       confidence: rating === null ? 0.55 : 0.82,
     };
@@ -123,6 +125,16 @@ function buildSocialPost(input: ReviewAnalysisInput): string {
     `Thank you for trusting ${input.business_name}. ` +
     `Ready to experience it yourself? Get in touch today.`
   );
+}
+
+/**
+ * A clean, standalone testimonial quote derived from the review — uses the
+ * customer's own words verbatim (no fabrication). The owner must confirm they
+ * have the right to reuse it before publishing.
+ */
+function buildTestimonial(input: ReviewAnalysisInput): string {
+  const name = input.reviewer_name?.trim() || "Verified customer";
+  return `"${truncate(input.review_text, 220)}" — ${name}`;
 }
 
 function extractKeyPoints(text: string): string[] {

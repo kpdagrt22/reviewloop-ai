@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireOrg } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { AddCustomerPanel } from "./customer-forms";
+import { EditCustomerButton } from "./customer-edit";
 import { setOptOutAction } from "./actions";
 import { Badge } from "@/components/ui/badge";
 import { Button, LinkButton } from "@/components/ui/button";
@@ -113,6 +114,7 @@ export default async function CustomersPage({
                       </td>
                       <td className="py-3 pr-4 text-right">
                         <div className="flex items-center justify-end gap-2">
+                          <EditCustomerButton customer={c} />
                           <form action={setOptOutAction}>
                             <input type="hidden" name="customerId" value={c.id} />
                             <input type="hidden" name="optOut" value={c.opt_out ? "false" : "true"} />

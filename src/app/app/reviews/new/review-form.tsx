@@ -6,8 +6,10 @@ import { createReviewAction, type ReviewFormState } from "../actions";
 
 export function NewReviewForm({
   customers,
+  requests = [],
 }: {
   customers: { id: string; name: string }[];
+  requests?: { id: string; label: string }[];
 }) {
   const [state, formAction, pending] = useActionState<ReviewFormState, FormData>(
     createReviewAction,
@@ -29,9 +31,8 @@ export function NewReviewForm({
             </select>
           </div>
           <div>
-            <label className="label">Rating</label>
-            <select name="rating" className="input" defaultValue="">
-              <option value="">Unknown</option>
+            <label className="label">Rating *</label>
+            <select name="rating" required className="input" defaultValue="5">
               <option value="5">5 — Excellent</option>
               <option value="4">4 — Good</option>
               <option value="3">3 — Okay</option>
@@ -77,6 +78,23 @@ export function NewReviewForm({
             </select>
           </div>
         </div>
+
+        {requests.length > 0 ? (
+          <div>
+            <label className="label">From review request (optional)</label>
+            <select name="reviewRequestId" className="input" defaultValue="">
+              <option value="">— None —</option>
+              {requests.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.label}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-gray-400">
+              Linking marks that request as completed.
+            </p>
+          </div>
+        ) : null}
 
         {state.error ? (
           <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{state.error}</p>

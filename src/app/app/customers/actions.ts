@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireOrg } from "@/lib/auth/session";
 import { customerSchema } from "@/lib/validation/schemas";
 import { parseCustomersCsv, truthy } from "@/lib/customers/csv";
+import { reportDbError } from "@/lib/observability/log";
 
 export interface CustomerFormState {
   error?: string;
@@ -105,11 +106,12 @@ export async function setOptOutAction(formData: FormData): Promise<void> {
   if (!id) return;
 
   const supabase = await createClient();
-  await supabase
+  const { error } = await supabase
     .from("customers")
     .update({ opt_out: optOut })
     .eq("id", id)
     .eq("organization_id", org.id);
+  reportDbError("customers.update(opt_out)", error, { id, optOut });
   revalidatePath("/app/customers");
 }
 

@@ -6,6 +6,7 @@ import {
 import { containsProhibitedReplyContent, shouldEscalate } from "@/lib/reviews/rules";
 import { hasResend, publicEnv } from "@/lib/env";
 import { sendEmail } from "@/lib/messaging/email";
+import { reportDbError, logError } from "@/lib/observability/log";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Tables } from "@/lib/supabase/types";
 
@@ -88,7 +89,7 @@ export async function analyzeAndPersist(
   // terminal state — re-analyzing (e.g. "Regenerate") must not silently revert
   // an already-replied or archived review back to new/escalated.
   const isTerminal = review.status === "replied" || review.status === "archived";
-  await supabase
+  const { error: reviewErr } = await supabase
     .from("reviews")
     .update({
       sentiment: analysis.sentiment,
@@ -96,9 +97,10 @@ export async function analyzeAndPersist(
     })
     .eq("id", review.id)
     .eq("organization_id", org.id);
+  reportDbError("reviews.update(sentiment/status)", reviewErr, { reviewId: review.id });
 
   // 2) Insert the reply draft (pending approval).
-  const { data: draft } = await supabase
+  const { data: draft, error: draftErr } = await supabase
     .from("ai_reply_drafts")
     .insert({
       organization_id: org.id,
@@ -110,10 +112,11 @@ export async function analyzeAndPersist(
     })
     .select("id")
     .single();
+  reportDbError("ai_reply_drafts.insert", draftErr, { reviewId: review.id });
 
   // 3) Escalation notification event + optional email alert.
   if (escalated) {
-    await supabase.from("notification_events").insert({
+    const { error: eventErr } = await supabase.from("notification_events").insert({
       organization_id: org.id,
       event_type: "negative_review_detected",
       metadata: {
@@ -124,12 +127,15 @@ export async function analyzeAndPersist(
         suggested_action: "Respond professionally and consider calling the customer.",
       },
     });
+    reportDbError("notification_events.insert(escalation)", eventErr, {
+      reviewId: review.id,
+    });
 
     // Email the escalation address when configured (best-effort, non-blocking).
     // We include only review fields that are already public; no private CRM data.
     if (org.escalation_email && hasResend()) {
       const link = `${publicEnv.appUrl}/app/reviews/${review.id}`;
-      await sendEmail({
+      const emailRes = await sendEmail({
         to: org.escalation_email,
         subject: `⚠️ Negative review needs attention — ${org.name}`,
         body: [
@@ -144,12 +150,23 @@ export async function analyzeAndPersist(
           ``,
           `Open it here: ${link}`,
         ].join("\n"),
-      }).catch(() => undefined);
+      }).catch((err: unknown) => ({
+        ok: false as const,
+        error: (err as Error).message,
+      }));
+      // Best-effort and non-blocking, but a failed escalation alert must be
+      // visible in logs/monitoring rather than silently dropped.
+      if (!emailRes.ok) {
+        logError("escalation email failed to send", {
+          reviewId: review.id,
+          error: emailRes.error,
+        });
+      }
     }
   }
 
   // 4) AI call log.
-  await supabase.from("ai_review_logs").insert({
+  const { error: logErr } = await supabase.from("ai_review_logs").insert({
     organization_id: org.id,
     review_id: review.id,
     provider: provider.name,
@@ -159,6 +176,7 @@ export async function analyzeAndPersist(
     status: logStatus,
     error_message: errorMessage,
   });
+  reportDbError("ai_review_logs.insert", logErr, { reviewId: review.id });
 
   return { analysis, draftId: draft?.id ?? null, escalated };
 }

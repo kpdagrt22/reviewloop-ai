@@ -7,6 +7,7 @@ import { requireOrg } from "@/lib/auth/session";
 import { reviewSchema } from "@/lib/validation/schemas";
 import { analyzeAndPersist } from "@/lib/reviews/analyze";
 import { ratingToSentiment } from "@/lib/reviews/rules";
+import { reportDbError } from "@/lib/observability/log";
 
 export interface ReviewFormState {
   error?: string;
@@ -63,11 +64,14 @@ export async function createReviewAction(
 
   // If this review came from a tracked request, mark that request completed.
   if (d.reviewRequestId) {
-    await supabase
+    const { error: reqErr } = await supabase
       .from("review_requests")
       .update({ status: "completed", completed_at: new Date().toISOString() })
       .eq("id", d.reviewRequestId)
       .eq("organization_id", org.id);
+    reportDbError("review_requests.update(completed)", reqErr, {
+      requestId: d.reviewRequestId,
+    });
     revalidatePath("/app/requests");
   }
 
@@ -91,12 +95,13 @@ export async function regenerateReplyAction(formData: FormData): Promise<void> {
   if (!review) return;
 
   // Discard previous drafts so the latest is unambiguous.
-  await supabase
+  const { error: discardErr } = await supabase
     .from("ai_reply_drafts")
     .update({ status: "discarded" })
     .eq("review_id", reviewId)
     .eq("organization_id", org.id)
     .eq("status", "draft");
+  reportDbError("ai_reply_drafts.update(discarded)", discardErr, { reviewId });
 
   await analyzeAndPersist(supabase, org, review);
   revalidatePath(`/app/reviews/${reviewId}`);
@@ -110,11 +115,12 @@ export async function saveDraftAction(formData: FormData): Promise<void> {
   if (!draftId) return;
 
   const supabase = await createClient();
-  await supabase
+  const { error } = await supabase
     .from("ai_reply_drafts")
     .update({ draft_text: text })
     .eq("id", draftId)
     .eq("organization_id", org.id);
+  reportDbError("ai_reply_drafts.update(draft_text)", error, { draftId });
   revalidatePath("/app/reviews");
 }
 
@@ -126,17 +132,19 @@ export async function markPostedAction(formData: FormData): Promise<void> {
   if (!draftId) return;
 
   const supabase = await createClient();
-  await supabase
+  const { error: draftErr } = await supabase
     .from("ai_reply_drafts")
     .update({ status: "posted" })
     .eq("id", draftId)
     .eq("organization_id", org.id);
+  reportDbError("ai_reply_drafts.update(posted)", draftErr, { draftId });
   if (reviewId) {
-    await supabase
+    const { error: reviewErr } = await supabase
       .from("reviews")
       .update({ status: "replied" })
       .eq("id", reviewId)
       .eq("organization_id", org.id);
+    reportDbError("reviews.update(replied)", reviewErr, { reviewId });
   }
   revalidatePath(`/app/reviews/${reviewId}`);
 }
@@ -151,7 +159,7 @@ export async function createTestimonialAction(formData: FormData): Promise<void>
   if (!reviewId || !quote) return;
 
   const supabase = await createClient();
-  await supabase.from("testimonials").insert({
+  const { error } = await supabase.from("testimonials").insert({
     organization_id: org.id,
     review_id: reviewId,
     quote_text: quote,
@@ -159,6 +167,7 @@ export async function createTestimonialAction(formData: FormData): Promise<void>
     service_type: serviceType || null,
     approved: false,
   });
+  reportDbError("testimonials.insert", error, { reviewId });
   revalidatePath(`/app/reviews/${reviewId}`);
   revalidatePath("/app/testimonials");
 }
@@ -172,12 +181,13 @@ export async function createSocialPostAction(formData: FormData): Promise<void> 
   if (!reviewId || !text) return;
 
   const supabase = await createClient();
-  await supabase.from("social_posts").insert({
+  const { error } = await supabase.from("social_posts").insert({
     organization_id: org.id,
     review_id: reviewId,
     platform,
     post_text: text,
     status: "draft",
   });
+  reportDbError("social_posts.insert", error, { reviewId });
   revalidatePath(`/app/reviews/${reviewId}`);
 }

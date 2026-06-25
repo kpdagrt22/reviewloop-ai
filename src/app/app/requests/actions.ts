@@ -9,6 +9,8 @@ import { sendEmail } from "@/lib/messaging/email";
 import { sendSms } from "@/lib/messaging/sms";
 import { assertTransition, type RequestStatus } from "@/lib/reviews/request-status";
 import { checkReviewRequestQuota } from "@/lib/billing/usage";
+import { DELIVERY_CHANNELS, isOneOf, type DeliveryChannel } from "@/lib/db/enums";
+import { reportDbError } from "@/lib/observability/log";
 
 export interface RequestActionState {
   error?: string;
@@ -47,10 +49,11 @@ export async function createRequestAction(
 ): Promise<RequestActionState> {
   const org = await requireOrg();
   const customerId = str(formData.get("customerId"));
-  const channel = (str(formData.get("channel")) || "manual") as
-    | "manual"
-    | "email"
-    | "sms";
+  const channelRaw = str(formData.get("channel")) || "manual";
+  if (!isOneOf(DELIVERY_CHANNELS, channelRaw)) {
+    return { error: "Unsupported request channel." };
+  }
+  const channel: DeliveryChannel = channelRaw;
   // "send" (default) advances to sent; "ready" stages the request without sending.
   const stage = str(formData.get("stage")) === "ready" ? "ready" : "send";
 
@@ -177,10 +180,11 @@ export async function updateRequestStatusAction(formData: FormData): Promise<voi
   if (to === "completed") patch.completed_at = now;
 
   const supabase = await createClient();
-  await supabase
+  const { error } = await supabase
     .from("review_requests")
     .update(patch)
     .eq("id", id)
     .eq("organization_id", org.id);
+  reportDbError("review_requests.update(status)", error, { id, to });
   revalidatePath("/app/requests");
 }

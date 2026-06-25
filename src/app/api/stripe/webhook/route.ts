@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getStripe } from "@/lib/billing/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { reportDbError } from "@/lib/observability/log";
 
 /**
  * Stripe webhook handler. Verifies the signature, then upserts subscription
@@ -46,7 +47,7 @@ export async function POST(req: Request) {
       };
       const orgId = session.metadata?.organization_id ?? session.client_reference_id;
       if (orgId) {
-        await admin.from("subscriptions").upsert(
+        const { error } = await admin.from("subscriptions").upsert(
           {
             organization_id: orgId,
             stripe_customer_id: (session.customer as string) ?? null,
@@ -56,6 +57,10 @@ export async function POST(req: Request) {
           },
           { onConflict: "organization_id" },
         );
+        if (reportDbError("subscriptions.upsert(checkout)", error, { orgId })) {
+          // Surface to Stripe so it retries delivery rather than dropping the sub.
+          return NextResponse.json({ error: "Persist failed" }, { status: 500 });
+        }
       }
       break;
     }
@@ -69,13 +74,16 @@ export async function POST(req: Request) {
       // Look up by the Stripe subscription id (always present) rather than
       // relying on subscription metadata, which is not copied from the Checkout
       // Session. The row was created by checkout.session.completed above.
-      await admin
+      const { error } = await admin
         .from("subscriptions")
         .update({
           status: sub.status,
           current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
         })
         .eq("stripe_subscription_id", sub.id);
+      if (reportDbError("subscriptions.update(status)", error, { subId: sub.id })) {
+        return NextResponse.json({ error: "Persist failed" }, { status: 500 });
+      }
       break;
     }
     default:

@@ -1,5 +1,7 @@
 # ReviewLoop AI
 
+[![CI](https://github.com/kpdagrt22/reviewloop-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/kpdagrt22/reviewloop-ai/actions/workflows/ci.yml)
+
 > Get more 5-star reviews without chasing customers manually.
 
 ReviewLoop AI is a review request, review reply, reputation, and testimonial
@@ -143,9 +145,16 @@ and CSV import.
 
 ## Deployment
 
-See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). In short: deploy to Vercel, set the
-env vars, apply the Supabase migrations, and point a Stripe webhook at
-`/api/stripe/webhook` (only if billing is enabled).
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fkpdagrt22%2Freviewloop-ai&env=NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_ANON_KEY,SUPABASE_SERVICE_ROLE_KEY,AI_PROVIDER,NEXT_PUBLIC_APP_URL&envDescription=Supabase%20keys%20%2B%20app%20config%20(AI_PROVIDER%3Dmock%20works%20with%20no%20AI%20key)&envLink=https%3A%2F%2Fgithub.com%2Fkpdagrt22%2Freviewloop-ai%2Fblob%2Fmain%2F.env.example)
+
+The fastest path is the **Vercel ↔ GitHub integration**: import this repo at
+[vercel.com/new](https://vercel.com/new) (or use the button above). Vercel
+auto‑detects Next.js, and every push to `main` then deploys automatically —
+pairing with the CI above (CI must be green for a clean deploy).
+
+See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for the full guide. In short: deploy
+to Vercel, set the env vars, apply the Supabase migrations, and point a Stripe
+webhook at `/api/stripe/webhook` (only if billing is enabled).
 
 ---
 

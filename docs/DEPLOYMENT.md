@@ -61,14 +61,20 @@ deployed domain.
 - Add a customer, paste a review, confirm a draft reply appears.
 - Mark a negative review and confirm it's flagged on the dashboard.
 
-## CI suggestions
-```
-npm ci
-npm run typecheck
-npm run test
-npm run build
-# optional: npm run test:e2e   (boots the dev server)
-```
+## Continuous integration
+CI is configured in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) and
+runs on every push/PR to `main`:
+- **verify** job: `npm ci` → `npm run typecheck` → `npm run test` → `npm run build`
+- **e2e** job: Playwright chromium smoke tests against the public pages
+
+No secrets are needed for CI (the app builds with mock AI and dynamic `/app`
+routes). Keep `main` green; with the Vercel ↔ GitHub integration enabled, each
+push to `main` also triggers a production deploy.
+
+### Auto-deploy via Git integration (recommended)
+Import the repo once at [vercel.com/new](https://vercel.com/new) (or the
+"Deploy with Vercel" button in the README). After that, pushes to `main` deploy
+automatically and pull requests get preview URLs — no Vercel CLI needed.
 
 ## Rollback / migrations
 Migrations are additive and idempotent where practical (`if not exists`). To

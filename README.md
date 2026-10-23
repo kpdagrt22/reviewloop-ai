@@ -16,6 +16,8 @@ review requests, pastes reviews it receives, and ReviewLoop drafts replies and
 turns positive reviews into testimonials and social posts. Nothing is posted
 automatically — the owner approves everything.
 
+> **Status & provenance:** Prototype built in hours with AI coding agents, directed and reviewed by [Prakash Kantumutchu (KP)](https://thisiskp.in). Never deployed as a commercial service; built to test end-to-end architecture, RLS, and deterministic fallback patterns. Verified on 23 Oct 2026: `tsc --noEmit` (0 errors) and **114 tests passing** across 18 test files (`npm test`). Case study: [thisiskp.in/work/agent-built-saas-prototypes](https://thisiskp.in/work/agent-built-saas-prototypes).
+
 ---
 
 ## Tech stack
@@ -209,3 +211,9 @@ supabase/migrations/         # 0001_init.sql, 0002_rls.sql
 tests/unit/                  # Vitest
 tests/e2e/                   # Playwright
 ```
+
+---
+
+## License
+
+MIT — see [`LICENSE`](LICENSE).
